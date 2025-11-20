@@ -35,11 +35,19 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
     const textToShare = `"${artifact.extractedComment}"\n\n— Found in ${artifact.fileName} from repo '${artifact.repoName}'\n#ReadmeRouletter`;
     
     try {
-      await navigator.clipboard.writeText(textToShare);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 3000);
+      // Try native sharing first if available (works great on Mobile)
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Readme.txt Artifact',
+          text: textToShare,
+        });
+      } else {
+        await navigator.clipboard.writeText(textToShare);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 3000);
+      }
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error('Failed to share/copy:', err);
     }
   };
   
@@ -94,7 +102,7 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
 
         {/* Spotlight Effect */}
         <div 
-          className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+          className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 hidden md:block"
           style={{
             background: `radial-gradient(800px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(30, 30, 30, 0.8), transparent 40%)`
           }}
@@ -108,7 +116,7 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
             
             {/* The Artifact Text - Highlighting applied here */}
             <div className="w-full text-center">
-                <p className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-serif leading-tight text-[#fffef5] drop-shadow-[0_0_15px_rgba(242,238,203,0.15)] selection:bg-stone-700 selection:text-white break-words">
+                <p className="selectable-text text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-serif leading-tight text-[#fffef5] drop-shadow-[0_0_15px_rgba(242,238,203,0.15)] selection:bg-stone-700 selection:text-white break-words">
                 {artifact.extractedComment}
                 </p>
             </div>
@@ -161,7 +169,7 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
         <div 
           className={`w-full border-t border-stone-800 bg-[#080808] transition-all duration-500 ease-in-out ${showRawCode ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}
         >
-          <div className="p-6 md:p-8 overflow-x-auto">
+          <div className="p-6 md:p-8 overflow-x-auto selectable-text">
             <div className="flex items-center justify-between mb-4 border-b border-stone-800 pb-2">
                 <span className="text-[10px] font-mono text-stone-500 uppercase">File: {artifact.fileName}</span>
                 <span className="text-[10px] font-mono text-stone-600 uppercase">Ln 12-24</span>

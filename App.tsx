@@ -7,6 +7,7 @@ import { HistoryModal } from './components/HistoryModal';
 import { fetchArtifact } from './services/gemini';
 import { CodeArtifact } from './types';
 import { extractComment } from './utils/regex';
+import { detectMood } from './utils/mood';
 import { LOADING_MESSAGES } from './constants';
 
 const App: React.FC = () => {
@@ -62,7 +63,7 @@ const App: React.FC = () => {
         language: rawData.language,
         rawCode: rawData.codeSnippet,
         extractedComment: extracted,
-        mood: 'frustrated', 
+        mood: detectMood(extracted),
         timestamp: new Date().toISOString().split('T')[0]
       };
 

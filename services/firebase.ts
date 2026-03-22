@@ -1,15 +1,14 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getFunctions, Functions } from "firebase/functions";
 
-// --- REAL FIREBASE CONFIG (Updated) ---
+// --- Firebase config from environment variables ---
 const firebaseConfig = {
-  apiKey: "AIzaSyBur1dRxHsiI0LitNfBK4TR7ECKEWkpYBM",
-  authDomain: "gen-lang-client-0928241661.firebaseapp.com",
-  projectId: "gen-lang-client-0928241661",
-  storageBucket: "gen-lang-client-0928241661.firebasestorage.app",
-  messagingSenderId: "31152200054",
-  appId: "1:31152200054:web:e5c05bc344a444d66e4257",
-  measurementId: "G-QLXPG7HZ4T"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
 };
 
 // --- Detect whether config is valid ---
@@ -29,8 +28,6 @@ if (isFirebaseConfigured()) {
   try {
     const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
     functions = getFunctions(app);
-    // Note: Analytics is intentionally omitted to prevent 'Installations' errors
-    // if the API key is restricted or the service isn't fully provisioned yet.
   } catch (e) {
     console.warn("Firebase initialization failed. Falling back to non-Firebase mode.", e);
     functions = null;

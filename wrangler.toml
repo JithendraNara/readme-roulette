@@ -1,6 +1,0 @@
-name = "readme-roulette"
-compatibility_date = "2025-01-09"
-pages_build_output_dir = "dist"
-
-[vars]
-NODE_VERSION = "18"

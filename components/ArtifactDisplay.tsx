@@ -1,5 +1,6 @@
 import React, { useState, useRef, MouseEvent, useEffect } from 'react';
 import { CodeArtifact } from '../types';
+import { generateArtifactPDF } from '../services/pdfExport';
 
 interface ArtifactDisplayProps {
   artifact: CodeArtifact | null;
@@ -48,6 +49,16 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
       }
     } catch (err) {
       console.error('Failed to share/copy:', err);
+    }
+  };
+
+  const handleDownloadPDF = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!artifact) return;
+    try {
+      await generateArtifactPDF(artifact);
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
     }
   };
   
@@ -125,12 +136,26 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
             <div className="text-6xl md:text-8xl font-serif text-stone-700/30 mt-6 transform rotate-180 select-none">“</div>
 
             {/* Metadata Line */}
-            <div className="mt-10 flex flex-wrap justify-center gap-4 text-xs md:text-sm font-mono text-stone-500 tracking-widest uppercase border-t border-stone-900 pt-6 w-full opacity-70">
+            <div className="mt-10 flex flex-wrap justify-center items-center gap-4 text-xs md:text-sm font-mono text-stone-500 tracking-widest uppercase border-t border-stone-900 pt-6 w-full opacity-70">
                 <span className="text-museum-paper opacity-60">Repo: {artifact.repoName}</span>
                 <span className="hidden md:inline text-stone-800">•</span>
                 <span>{artifact.language}</span>
                 <span className="hidden md:inline text-stone-800">•</span>
                 <span>{artifact.timestamp}</span>
+                <span className="hidden md:inline text-stone-800">•</span>
+                <span
+                  className="px-2 py-0.5 rounded-sm text-[10px] tracking-[0.15em]"
+                  style={{
+                    backgroundColor: artifact.mood === 'angry' ? '#7a2a2a'
+                      : artifact.mood === 'funny' ? '#3a6b3a'
+                      : artifact.mood === 'confused' ? '#4a5e7a'
+                      : artifact.mood === 'defeated' ? '#3a3a5a'
+                      : '#6b5b4f',
+                    color: '#f2eecb',
+                  }}
+                >
+                  {artifact.mood}
+                </span>
             </div>
 
             {/* Action Bar */}
@@ -154,6 +179,16 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
                             <span>Share</span>
                         </>
                     )}
+                </button>
+
+                <button 
+                    onClick={handleDownloadPDF}
+                    className="flex items-center gap-2 px-5 py-2 text-[10px] md:text-xs font-mono text-stone-400 hover:text-white uppercase tracking-[0.2em] transition-all duration-300 bg-stone-900/50 hover:bg-stone-800 border border-stone-800 rounded-sm hover:border-stone-600"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    <span>Download PDF</span>
                 </button>
                 
                 <button 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { CodeArtifact } from '../types';
+import { exportHistoryAsPPT } from '../services/pptxExport';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -70,7 +71,13 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
         </div>
 
         {history.length > 0 && (
-          <div className="p-4 border-t border-stone-800 bg-museum-black">
+          <div className="p-4 border-t border-stone-800 bg-museum-black space-y-2">
+            <button
+              onClick={() => exportHistoryAsPPT(history)}
+              className="w-full text-xs font-mono text-stone-400 hover:text-museum-paper hover:bg-stone-800 py-3 border border-stone-700 hover:border-museum-paper/50 transition-all uppercase tracking-widest"
+            >
+              Export Slides
+            </button>
             <button
               onClick={onClearHistory}
               className="w-full text-xs font-mono text-red-900/70 hover:text-red-500 hover:bg-red-950/10 py-3 border border-transparent hover:border-red-900/30 transition-all uppercase tracking-widest"

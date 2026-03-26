@@ -30,7 +30,7 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
-const TRENDING_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const TRENDING_CACHE_DURATION = 30 * 1000; // 30 seconds — refresh on every scan
 const CACHE: Map<string, CacheEntry<unknown>> = new Map();
 
 /**
@@ -95,15 +95,24 @@ export async function fetchLanguages(): Promise<Array<{ urlParam: string; name: 
 
 /**
  * Pick a random trending repo, optionally filtered by language.
+ * Uses fresh daily trending data for maximum variety.
  */
 export async function getRandomTrendingRepo(language?: string): Promise<TrendingRepo> {
-  const repos = await fetchTrending({ language, since: 'weekly' });
+  // Always fetch fresh — no long-term cache on individual picks
+  const repos = await fetchTrending({ language, since: 'daily' });
 
   if (repos.length === 0) {
     throw new Error('No trending repos found. Try a different language.');
   }
 
-  return repos[Math.floor(Math.random() * repos.length)];
+  // Fisher-Yates shuffle then pick first — avoids top-of-list bias
+  const shuffled = [...repos];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled[0];
 }
 
 /**

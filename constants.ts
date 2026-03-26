@@ -7,7 +7,27 @@ export const LOADING_MESSAGES = [
   "Filtering out stack overflow copy-pastes...",
   "Locating FIXME tags...",
   "Connecting to legacy servers...",
-  "Searching for 'TODO: clean this up'..."
+  "Searching for 'TODO: clean this up'...",
+  // Trending mode messages
+  "Querying the GitHub oracle...",
+  "Scraping the trending zeitgeist...",
+  "Measuring repo velocity...",
+  "Indexing stars and forks...",
+  "Decoding the open source collective unconscious...",
+  "Consulting the global developer hive mind...",
+  "Calibrating the algorithmic curator...",
+  "Loading trending artifacts...",
+];
+
+export const TRENDING_LOADING_MESSAGES = [
+  "Querying the GitHub oracle...",
+  "Scraping the trending zeitgeist...",
+  "Measuring repo velocity...",
+  "Indexing stars and forks...",
+  "Decoding the open source collective unconscious...",
+  "Consulting the global developer hive mind...",
+  "Calibrating the algorithmic curator...",
+  "Loading trending artifacts...",
 ];
 
 export const FALLBACK_ARTIFACTS = [

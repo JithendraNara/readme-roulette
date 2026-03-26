@@ -7,6 +7,13 @@ export interface CodeArtifact {
   extractedComment: string;
   mood: 'frustrated' | 'confused' | 'angry' | 'funny' | 'defeated';
   timestamp: string;
+  // Extended fields for GitHub Trending mode
+  readmeUrl?: string;
+  readmeRaw?: string;
+  stars?: number;
+  forks?: number;
+  author?: string;
+  repoUrl?: string;
 }
 
 export interface GeminiArtifactResponse {
@@ -14,4 +21,11 @@ export interface GeminiArtifactResponse {
   fileName: string;
   language: string;
   codeSnippet: string; // This contains both code and comments
+}
+
+export type ArtifactMode = 'ai' | 'trending';
+
+export interface Language {
+  urlParam: string;
+  name: string;
 }

@@ -1,14 +1,20 @@
 import React, { useState, useRef, MouseEvent, useEffect } from 'react';
-import { CodeArtifact } from '../types';
+import { CodeArtifact, ArtifactMode } from '../types';
 import { generateArtifactPDF } from '../services/pdfExport';
 
 interface ArtifactDisplayProps {
   artifact: CodeArtifact | null;
   isLoading: boolean;
   loadingMessage: string;
+  artifactMode?: ArtifactMode;
 }
 
-export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLoading, loadingMessage }) => {
+export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({
+  artifact,
+  isLoading,
+  loadingMessage,
+  artifactMode = 'ai',
+}) => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isCopied, setIsCopied] = useState(false);
   const [showRawCode, setShowRawCode] = useState(false);
@@ -29,18 +35,28 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
     }
   };
 
+  const isTrending = artifactMode === 'trending';
+
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!artifact) return;
 
-    const textToShare = `"${artifact.extractedComment}"\n\n— Found in ${artifact.fileName} from repo '${artifact.repoName}'\n#ReadmeRouletter`;
-    
+    let textToShare: string;
+    let shareUrl: string | undefined;
+
+    if (isTrending && artifact.repoUrl) {
+      textToShare = `"${artifact.extractedComment}"\n\n— ${artifact.repoName} (${artifact.stars?.toLocaleString()} ★)\n${artifact.repoUrl}\n#ReadmeRoulette`;
+      shareUrl = artifact.repoUrl;
+    } else {
+      textToShare = `"${artifact.extractedComment}"\n\n— Found in ${artifact.fileName} from repo '${artifact.repoName}'\n#ReadmeRoulette`;
+    }
+
     try {
-      // Try native sharing first if available (works great on Mobile)
       if (navigator.share) {
         await navigator.share({
-          title: 'Readme.txt Artifact',
+          title: isTrending ? artifact.repoName : 'Readme.txt Artifact',
           text: textToShare,
+          url: shareUrl,
         });
       } else {
         await navigator.clipboard.writeText(textToShare);
@@ -61,7 +77,17 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
       console.error('Failed to generate PDF:', err);
     }
   };
-  
+
+  const getMoodColor = (mood: string) => {
+    switch (mood) {
+      case 'angry': return '#7a2a2a';
+      case 'funny': return '#3a6b3a';
+      case 'confused': return '#4a5e7a';
+      case 'defeated': return '#3a3a5a';
+      default: return '#6b5b4f';
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] animate-pulse-slow px-4 text-center z-10">
@@ -70,7 +96,7 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
           <div className="absolute inset-0 overflow-hidden opacity-20">
              <div className="w-full h-[2px] bg-museum-paper/50 absolute top-0 animate-[scan_2s_ease-in-out_infinite]"></div>
           </div>
-          
+
           <div className="font-mono text-museum-paper text-lg md:text-2xl tracking-widest uppercase drop-shadow-[0_0_8px_rgba(242,238,203,0.5)]">
             {loadingMessage}
           </div>
@@ -97,14 +123,14 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
   }
 
   return (
-    <div 
+    <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
       className="w-full max-w-5xl mx-auto py-8 md:py-12 flex flex-col items-center animate-fade-in relative z-20 min-h-[60vh] justify-center"
     >
       {/* Main "Display Case" Card */}
       <div className="relative w-full bg-[#050505] border border-stone-800 shadow-[0_0_50px_-10px_rgba(0,0,0,0.7)] rounded-sm overflow-hidden group">
-        
+
         {/* Corner Brackets / Viewfinder styling */}
         <div className="absolute top-0 left-0 w-4 h-4 md:w-8 md:h-8 border-t border-l border-stone-600 z-20 opacity-50"></div>
         <div className="absolute top-0 right-0 w-4 h-4 md:w-8 md:h-8 border-t border-r border-stone-600 z-20 opacity-50"></div>
@@ -112,7 +138,7 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
         <div className="absolute bottom-0 right-0 w-4 h-4 md:w-8 md:h-8 border-b border-r border-stone-600 z-20 opacity-50"></div>
 
         {/* Spotlight Effect */}
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 hidden md:block"
           style={{
             background: `radial-gradient(800px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(30, 30, 30, 0.8), transparent 40%)`
@@ -121,11 +147,11 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
 
         {/* Inner Content Padding */}
         <div className="relative z-10 p-8 md:p-16 flex flex-col items-center">
-            
+
             {/* Decorative Quote Mark */}
-            <div className="text-6xl md:text-8xl font-serif text-stone-700/30 mb-6 select-none">“</div>
-            
-            {/* The Artifact Text - Highlighting applied here */}
+            <div className="text-6xl md:text-8xl font-serif text-stone-700/30 mb-6 select-none">"</div>
+
+            {/* The Artifact Text */}
             <div className="w-full text-center">
                 <p className="selectable-text text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-serif leading-tight text-[#fffef5] drop-shadow-[0_0_15px_rgba(242,238,203,0.15)] selection:bg-stone-700 selection:text-white break-words">
                 {artifact.extractedComment}
@@ -133,24 +159,46 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
             </div>
 
             {/* Decorative Quote Mark Bottom */}
-            <div className="text-6xl md:text-8xl font-serif text-stone-700/30 mt-6 transform rotate-180 select-none">“</div>
+            <div className="text-6xl md:text-8xl font-serif text-stone-700/30 mt-6 transform rotate-180 select-none">"</div>
 
             {/* Metadata Line */}
             <div className="mt-10 flex flex-wrap justify-center items-center gap-4 text-xs md:text-sm font-mono text-stone-500 tracking-widest uppercase border-t border-stone-900 pt-6 w-full opacity-70">
-                <span className="text-museum-paper opacity-60">Repo: {artifact.repoName}</span>
+                <span className="text-museum-paper opacity-60">
+                  {isTrending ? (
+                    <a
+                      href={artifact.repoUrl || `https://github.com/${artifact.author}/${artifact.repoName}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-museum-paper transition-colors underline underline-offset-2"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {artifact.repoName}
+                    </a>
+                  ) : (
+                    `Repo: ${artifact.repoName}`
+                  )}
+                </span>
                 <span className="hidden md:inline text-stone-800">•</span>
                 <span>{artifact.language}</span>
                 <span className="hidden md:inline text-stone-800">•</span>
                 <span>{artifact.timestamp}</span>
+                {isTrending && artifact.stars && (
+                  <>
+                    <span className="hidden md:inline text-stone-800">•</span>
+                    <span className="text-amber-600">★ {artifact.stars.toLocaleString()}</span>
+                  </>
+                )}
+                {isTrending && artifact.forks !== undefined && (
+                  <>
+                    <span className="hidden md:inline text-stone-800">•</span>
+                    <span>⑂ {artifact.forks.toLocaleString()}</span>
+                  </>
+                )}
                 <span className="hidden md:inline text-stone-800">•</span>
                 <span
                   className="px-2 py-0.5 rounded-sm text-[10px] tracking-[0.15em]"
                   style={{
-                    backgroundColor: artifact.mood === 'angry' ? '#7a2a2a'
-                      : artifact.mood === 'funny' ? '#3a6b3a'
-                      : artifact.mood === 'confused' ? '#4a5e7a'
-                      : artifact.mood === 'defeated' ? '#3a3a5a'
-                      : '#6b5b4f',
+                    backgroundColor: getMoodColor(artifact.mood),
                     color: '#f2eecb',
                   }}
                 >
@@ -159,8 +207,8 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
             </div>
 
             {/* Action Bar */}
-            <div className="mt-8 flex gap-4 relative z-30">
-                <button 
+            <div className="mt-8 flex gap-4 relative z-30 flex-wrap justify-center">
+                <button
                     onClick={handleShare}
                     className="flex items-center gap-2 px-5 py-2 text-[10px] md:text-xs font-mono text-stone-400 hover:text-white uppercase tracking-[0.2em] transition-all duration-300 bg-stone-900/50 hover:bg-stone-800 border border-stone-800 rounded-sm hover:border-stone-600"
                 >
@@ -181,7 +229,7 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
                     )}
                 </button>
 
-                <button 
+                <button
                     onClick={handleDownloadPDF}
                     className="flex items-center gap-2 px-5 py-2 text-[10px] md:text-xs font-mono text-stone-400 hover:text-white uppercase tracking-[0.2em] transition-all duration-300 bg-stone-900/50 hover:bg-stone-800 border border-stone-800 rounded-sm hover:border-stone-600"
                 >
@@ -190,36 +238,98 @@ export const ArtifactDisplay: React.FC<ArtifactDisplayProps> = ({ artifact, isLo
                     </svg>
                     <span>Download PDF</span>
                 </button>
-                
-                <button 
+
+                <button
                     onClick={() => setShowRawCode(!showRawCode)}
                     className={`flex items-center gap-2 px-5 py-2 text-[10px] md:text-xs font-mono uppercase tracking-[0.2em] transition-all duration-300 border rounded-sm ${showRawCode ? 'bg-stone-800 text-white border-stone-600' : 'bg-stone-900/50 text-stone-400 border-stone-800 hover:text-white hover:border-stone-600'}`}
                 >
                     <span>{showRawCode ? 'Hide Context' : 'View Context'}</span>
                 </button>
+
+                {isTrending && artifact.repoUrl && (
+                  <a
+                    href={artifact.repoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="flex items-center gap-2 px-5 py-2 text-[10px] md:text-xs font-mono text-stone-400 hover:text-white uppercase tracking-[0.2em] transition-all duration-300 bg-stone-900/50 hover:bg-stone-800 border border-stone-800 rounded-sm hover:border-stone-600"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                    </svg>
+                    <span>GitHub</span>
+                  </a>
+                )}
             </div>
         </div>
 
         {/* Slide-down Source Context Panel */}
-        <div 
+        <div
           className={`w-full border-t border-stone-800 bg-[#080808] transition-all duration-500 ease-in-out ${showRawCode ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}
         >
           <div className="p-6 md:p-8 overflow-x-auto selectable-text">
             <div className="flex items-center justify-between mb-4 border-b border-stone-800 pb-2">
-                <span className="text-[10px] font-mono text-stone-500 uppercase">File: {artifact.fileName}</span>
-                <span className="text-[10px] font-mono text-stone-600 uppercase">Ln 12-24</span>
+                <span className="text-[10px] font-mono text-stone-500 uppercase">
+                  {isTrending ? `README.md — ${artifact.author}/${artifact.repoName}` : `File: ${artifact.fileName}`}
+                </span>
+                <span className="text-[10px] font-mono text-stone-600 uppercase">
+                  {isTrending ? 'README' : 'Ln 12-24'}
+                </span>
             </div>
-            <pre className="font-mono text-xs md:text-sm leading-loose min-w-max">
-              {artifact.rawCode.split('\n').map((line, i) => {
-                 const isComment = line.trim().startsWith('//') || line.trim().startsWith('#') || line.trim().startsWith('--') || line.trim().startsWith('/*') || line.trim().startsWith('*');
-                 return (
-                    <div key={i} className={`flex ${isComment ? 'text-stone-400 italic bg-stone-900/30' : 'text-stone-600'}`}>
-                        <span className="inline-block w-8 select-none text-stone-800 text-right mr-4 text-[10px] pt-1">{i + 1}</span>
-                        <span className={isComment ? 'opacity-100' : 'opacity-70'}>{line}</span>
+            {isTrending ? (
+              // Render README markdown as formatted text
+              <div className="font-mono text-xs md:text-sm leading-loose text-stone-400 whitespace-pre-wrap">
+                {artifact.rawCode?.split('\n').slice(0, 80).map((line, i) => {
+                  const trimmed = line.trim();
+                  // Style different markdown elements
+                  if (trimmed.startsWith('# ')) {
+                    return <h1 key={i} className="text-museum-paper font-bold text-lg mt-4 mb-2">{trimmed.slice(2)}</h1>;
+                  }
+                  if (trimmed.startsWith('## ')) {
+                    return <h2 key={i} className="text-museum-paper/80 font-bold text-base mt-3 mb-1">{trimmed.slice(3)}</h2>;
+                  }
+                  if (trimmed.startsWith('### ')) {
+                    return <h3 key={i} className="text-stone-400 font-bold text-sm mt-2 mb-1">{trimmed.slice(4)}</h3>;
+                  }
+                  if (trimmed.startsWith('```')) {
+                    return <div key={i} className="text-stone-600 italic">{trimmed}</div>;
+                  }
+                  if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+                    return <div key={i} className="pl-4 text-stone-500">• {trimmed.slice(2)}</div>;
+                  }
+                  if (trimmed.startsWith('> ')) {
+                    return <div key={i} className="pl-4 border-l-2 border-stone-700 text-stone-500 italic">{trimmed.slice(2)}</div>;
+                  }
+                  if (trimmed === '') {
+                    return <div key={i} className="h-2"></div>;
+                  }
+                  // Inline code
+                  const parts = trimmed.split(/(`[^`]+`)/g);
+                  return (
+                    <div key={i} className="text-stone-400">
+                      {parts.map((part, j) =>
+                        part.startsWith('`') && part.endsWith('`')
+                          ? <code key={j} className="bg-stone-800 text-amber-300 px-1 rounded text-[10px]">{part.slice(1, -1)}</code>
+                          : <span key={j}>{part}</span>
+                      )}
                     </div>
-                 )
-              })}
-            </pre>
+                  );
+                })}
+              </div>
+            ) : (
+              // Render code snippet (existing behavior)
+              <pre className="font-mono text-xs md:text-sm leading-loose min-w-max">
+                {artifact.rawCode.split('\n').map((line, i) => {
+                   const isComment = line.trim().startsWith('//') || line.trim().startsWith('#') || line.trim().startsWith('--') || line.trim().startsWith('/*') || line.trim().startsWith('*');
+                   return (
+                      <div key={i} className={`flex ${isComment ? 'text-stone-400 italic bg-stone-900/30' : 'text-stone-600'}`}>
+                          <span className="inline-block w-8 select-none text-stone-800 text-right mr-4 text-[10px] pt-1">{i + 1}</span>
+                          <span className={isComment ? 'opacity-100' : 'opacity-70'}>{line}</span>
+                      </div>
+                   )
+                })}
+              </pre>
+            )}
           </div>
         </div>
       </div>
